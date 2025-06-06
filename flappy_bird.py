@@ -18,11 +18,14 @@ class FlappyBird:
         
         script_dir = os.path.dirname(os.path.abspath(__file__))
         bird_paths = [os.path.join(script_dir, "game_files", f"bird{i}.png") for i in range(1, 4)]
+        pipe_path = os.path.join(script_dir, "game_files", "pipe.png")
         
         self.bird_frames = [
             ImageTk.PhotoImage(Image.open(path).resize((self.bird_width, self.bird_height)))
             for path in bird_paths
         ]
+        self.pipe_img = Image.open(pipe_path).resize((50, 400))
+        self.pipe_img = ImageTk.PhotoImage(self.pipe_img)
         self.current_frame = 0
         
         self.canvas = tk.Canvas(master, width=self.width, height=self.height, bg="skyblue")
@@ -32,6 +35,7 @@ class FlappyBird:
         self.game_started = False
         self.bird = None
         self.bird_y_velocity = 0
+        self.pipes = []
         
         self.master.bind("<Button-1>", self.on_click)
         self.master.bind("<space>", self.on_space)
@@ -53,6 +57,7 @@ class FlappyBird:
     def start_game(self):
         self.game_over = False
         self.bird_y_velocity = 0
+        self.pipes.clear()
         self.canvas.delete("all")
         
         self.bird = self.canvas.create_image(
@@ -61,6 +66,7 @@ class FlappyBird:
             image=self.bird_frames[0]
         )
         
+        self.create_pipe()
         self.animate_bird()
         self.update()
 
@@ -70,10 +76,37 @@ class FlappyBird:
             self.canvas.itemconfig(self.bird, image=self.bird_frames[self.current_frame])
             self.master.after(100, self.animate_bird)
 
+    def create_pipe(self):
+        gap_start = random.randint(100, self.height - 200)
+        top_pipe = self.canvas.create_image(
+            self.width, gap_start - 400,
+            anchor=tk.NW,
+            image=self.pipe_img
+        )
+        bottom_pipe = self.canvas.create_image(
+            self.width, gap_start + 150,
+            anchor=tk.NW,
+            image=self.pipe_img
+        )
+        self.pipes.append((top_pipe, bottom_pipe))
+
     def update(self):
         if not self.game_over:
             self.bird_y_velocity += self.gravity
             self.canvas.move(self.bird, 0, self.bird_y_velocity)
+            
+            for top_pipe, bottom_pipe in self.pipes:
+                self.canvas.move(top_pipe, -3, 0)
+                self.canvas.move(bottom_pipe, -3, 0)
+            
+            if self.pipes and self.canvas.coords(self.pipes[0][0])[0] < -50:
+                top_pipe, bottom_pipe = self.pipes.pop(0)
+                self.canvas.delete(top_pipe)
+                self.canvas.delete(bottom_pipe)
+            
+            if len(self.pipes) == 0 or self.canvas.coords(self.pipes[-1][0])[0] < self.width - 200:
+                self.create_pipe()
+            
             self.master.after(15, self.update)
 
 if __name__ == "__main__":
