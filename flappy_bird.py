@@ -37,31 +37,34 @@ class FlappyBird:
         self.canvas.pack()
         
         self.score = 0
-        self.high_score = 0
+        self.high_score = self.load_high_score()
         self.game_over = False
-        self.game_started = False
         self.bird = None
         self.pipes = []
+        self.game_started = False
         self.start_message = None
         self.score_text = None
         self.high_score_text = None
+        self.update_id = None
+        self.animation_id = None
         
         self.master.bind("<Button-1>", self.on_click)
         self.master.bind("<space>", self.on_space)
 
-    def on_click(self, event):
-        if not self.game_started:
-            self.game_started = True
-            self.start_game()
-        elif self.game_over:
-            self.start_game()
+    def load_high_score(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        highscores_path = os.path.join(script_dir, "highscore.txt")
+        try:
+            with open(highscores_path, "r") as f:
+                return int(f.read())
+        except (FileNotFoundError, ValueError):
+            return 0
 
-    def on_space(self, event):
-        if not self.game_over and self.game_started:
-            self.flap()
-
-    def flap(self):
-        self.bird_y_velocity = -self.jump_strength
+    def save_high_score(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        highscores_path = os.path.join(script_dir, "highscore.txt")
+        with open(highscores_path, "w") as f:
+            f.write(str(self.high_score))
 
     def show_start_message(self):
         self.canvas.create_image(0, 0, anchor=tk.NW, image=self.background_img)
@@ -108,6 +111,12 @@ class FlappyBird:
         
         self.create_pipe()
         self.canvas.tag_raise("score")
+        
+        if self.update_id:
+            self.master.after_cancel(self.update_id)
+        if self.animation_id:
+            self.master.after_cancel(self.animation_id)
+        
         self.animate_bird()
         self.update()
 
@@ -115,7 +124,7 @@ class FlappyBird:
         if not self.game_over:
             self.current_frame = (self.current_frame + 1) % len(self.bird_frames)
             self.canvas.itemconfig(self.bird, image=self.bird_frames[self.current_frame])
-            self.master.after(100, self.animate_bird)
+            self.animation_id = self.master.after(100, self.animate_bird)
 
     def create_pipe(self):
         gap_start = random.randint(100, self.height - 200)
@@ -131,6 +140,20 @@ class FlappyBird:
         )
         self.pipes.append((top_pipe, bottom_pipe))
         self.canvas.tag_raise("score")
+
+    def on_click(self, event):
+        if not self.game_started:
+            self.game_started = True
+            self.start_game()
+        elif self.game_over:
+            self.start_game()
+
+    def on_space(self, event):
+        if not self.game_over and self.game_started:
+            self.flap()
+
+    def flap(self):
+        self.bird_y_velocity = -self.jump_strength
 
     def update(self):
         if not self.game_over:
@@ -158,8 +181,9 @@ class FlappyBird:
             if self.check_collision():
                 self.game_over = True
                 self.show_game_over_message()
+                self.save_high_score()
             
-            self.master.after(15, self.update)
+            self.update_id = self.master.after(15, self.update)
 
     def check_collision(self):
         bird_coords = self.canvas.coords(self.bird)
