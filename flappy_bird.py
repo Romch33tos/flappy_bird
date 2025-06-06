@@ -107,9 +107,30 @@ class FlappyBird:
             if len(self.pipes) == 0 or self.canvas.coords(self.pipes[-1][0])[0] < self.width - 200:
                 self.create_pipe()
             
+            if self.check_collision():
+                self.game_over = True
+            
             self.master.after(15, self.update)
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    game = FlappyBird(root)
-    root.mainloop()
+    def check_collision(self):
+        bird_coords = self.canvas.coords(self.bird)
+        if not bird_coords:
+            return True
+            
+        bird_x, bird_y = bird_coords[0], bird_coords[1]
+        
+        for top_pipe, bottom_pipe in self.pipes:
+            top_coords = self.canvas.coords(top_pipe)
+            bottom_coords = self.canvas.coords(bottom_pipe)
+            
+            if (bird_x + self.bird_width > top_coords[0] and
+                bird_x < top_coords[0] + 50 and
+                bird_y < top_coords[1] + 400):
+                return True
+            
+            if (bird_x + self.bird_width > bottom_coords[0] and
+                bird_x < bottom_coords[0] + 50 and
+                bird_y + self.bird_height > bottom_coords[1]):
+                return True
+        
+        if bird_y < 0 or bird_y
