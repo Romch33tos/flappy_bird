@@ -31,11 +31,15 @@ class FlappyBird:
         self.canvas = tk.Canvas(master, width=self.width, height=self.height, bg="skyblue")
         self.canvas.pack()
         
+        self.score = 0
+        self.high_score = 0
         self.game_over = False
         self.game_started = False
         self.bird = None
         self.bird_y_velocity = 0
         self.pipes = []
+        self.score_text = None
+        self.high_score_text = None
         
         self.master.bind("<Button-1>", self.on_click)
         self.master.bind("<space>", self.on_space)
@@ -55,10 +59,25 @@ class FlappyBird:
         self.bird_y_velocity = -self.jump_strength
 
     def start_game(self):
+        self.score = 0
         self.game_over = False
         self.bird_y_velocity = 0
         self.pipes.clear()
         self.canvas.delete("all")
+        
+        self.score_text = self.canvas.create_text(
+            self.width - 40, 20,
+            text=f"Счет: {self.score}",
+            font=("Arial", 12, "bold"), fill="white",
+            tags="score"
+        )
+        
+        self.high_score_text = self.canvas.create_text(
+            self.width - 50, 45,
+            text=f"Рекорд: {self.high_score}",
+            font=("Arial", 12, "bold"), fill="white",
+            tags="score"
+        )
         
         self.bird = self.canvas.create_image(
             50, self.height // 2,
@@ -67,6 +86,7 @@ class FlappyBird:
         )
         
         self.create_pipe()
+        self.canvas.tag_raise("score")
         self.animate_bird()
         self.update()
 
@@ -89,6 +109,7 @@ class FlappyBird:
             image=self.pipe_img
         )
         self.pipes.append((top_pipe, bottom_pipe))
+        self.canvas.tag_raise("score")
 
     def update(self):
         if not self.game_over:
@@ -103,6 +124,12 @@ class FlappyBird:
                 top_pipe, bottom_pipe = self.pipes.pop(0)
                 self.canvas.delete(top_pipe)
                 self.canvas.delete(bottom_pipe)
+                self.score += 1
+                self.canvas.itemconfig(self.score_text, text=f"Счет: {self.score}")
+                
+                if self.score > self.high_score:
+                    self.high_score = self.score
+                    self.canvas.itemconfig(self.high_score_text, text=f"Рекорд: {self.high_score}")
             
             if len(self.pipes) == 0 or self.canvas.coords(self.pipes[-1][0])[0] < self.width - 200:
                 self.create_pipe()
@@ -133,4 +160,12 @@ class FlappyBird:
                 bird_y + self.bird_height > bottom_coords[1]):
                 return True
         
-        if bird_y < 0 or bird_y
+        if bird_y < 0 or bird_y + self.bird_height > self.height:
+            return True
+        
+        return False
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    game = FlappyBird(root)
+    root.mainloop()
