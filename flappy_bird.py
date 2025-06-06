@@ -16,11 +16,22 @@ class FlappyBird:
         self.bird_width = 50
         self.bird_height = 45
         
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        bird_paths = [os.path.join(script_dir, "game_files", f"bird{i}.png") for i in range(1, 4)]
+        
+        self.bird_frames = [
+            ImageTk.PhotoImage(Image.open(path).resize((self.bird_width, self.bird_height)))
+            for path in bird_paths
+        ]
+        self.current_frame = 0
+        
         self.canvas = tk.Canvas(master, width=self.width, height=self.height, bg="skyblue")
         self.canvas.pack()
         
         self.game_over = False
         self.game_started = False
+        self.bird = None
+        self.bird_y_velocity = 0
         
         self.master.bind("<Button-1>", self.on_click)
         self.master.bind("<space>", self.on_space)
@@ -37,10 +48,33 @@ class FlappyBird:
             self.flap()
 
     def flap(self):
-        pass
+        self.bird_y_velocity = -self.jump_strength
 
     def start_game(self):
-        pass
+        self.game_over = False
+        self.bird_y_velocity = 0
+        self.canvas.delete("all")
+        
+        self.bird = self.canvas.create_image(
+            50, self.height // 2,
+            anchor=tk.NW,
+            image=self.bird_frames[0]
+        )
+        
+        self.animate_bird()
+        self.update()
+
+    def animate_bird(self):
+        if not self.game_over:
+            self.current_frame = (self.current_frame + 1) % len(self.bird_frames)
+            self.canvas.itemconfig(self.bird, image=self.bird_frames[self.current_frame])
+            self.master.after(100, self.animate_bird)
+
+    def update(self):
+        if not self.game_over:
+            self.bird_y_velocity += self.gravity
+            self.canvas.move(self.bird, 0, self.bird_y_velocity)
+            self.master.after(15, self.update)
 
 if __name__ == "__main__":
     root = tk.Tk()
