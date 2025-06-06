@@ -17,15 +17,20 @@ class FlappyBird:
         self.bird_height = 45
         
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        bird_paths = [os.path.join(script_dir, "game_files", f"bird{i}.png") for i in range(1, 4)]
+        background_path = os.path.join(script_dir, "game_files", "background.png")
         pipe_path = os.path.join(script_dir, "game_files", "pipe.png")
+        bird_paths = [os.path.join(script_dir, "game_files", f"bird{i}.png") for i in range(1, 4)]
+        
+        self.background_img = Image.open(background_path).resize((self.width, self.height))
+        self.background_img = ImageTk.PhotoImage(self.background_img)
+        
+        self.pipe_img = Image.open(pipe_path).resize((50, 400))
+        self.pipe_img = ImageTk.PhotoImage(self.pipe_img)
         
         self.bird_frames = [
             ImageTk.PhotoImage(Image.open(path).resize((self.bird_width, self.bird_height)))
             for path in bird_paths
         ]
-        self.pipe_img = Image.open(pipe_path).resize((50, 400))
-        self.pipe_img = ImageTk.PhotoImage(self.pipe_img)
         self.current_frame = 0
         
         self.canvas = tk.Canvas(master, width=self.width, height=self.height, bg="skyblue")
@@ -36,8 +41,8 @@ class FlappyBird:
         self.game_over = False
         self.game_started = False
         self.bird = None
-        self.bird_y_velocity = 0
         self.pipes = []
+        self.start_message = None
         self.score_text = None
         self.high_score_text = None
         
@@ -58,12 +63,28 @@ class FlappyBird:
     def flap(self):
         self.bird_y_velocity = -self.jump_strength
 
+    def show_start_message(self):
+        self.canvas.create_image(0, 0, anchor=tk.NW, image=self.background_img)
+        self.start_message = self.canvas.create_text(
+            self.width // 2, self.height // 2,
+            text="Кликни, чтобы начать игру!",
+            font=("Arial", 14, "bold"), fill="white", justify="center"
+        )
+
+    def show_game_over_message(self):
+        self.canvas.create_text(
+            self.width // 2, self.height // 2,
+            text="Конец игры!\nКликни для перезапуска!",
+            font=("Arial", 14, "bold"), fill="white", justify="center"
+        )
+
     def start_game(self):
         self.score = 0
         self.game_over = False
         self.bird_y_velocity = 0
         self.pipes.clear()
         self.canvas.delete("all")
+        self.canvas.create_image(0, 0, anchor=tk.NW, image=self.background_img)
         
         self.score_text = self.canvas.create_text(
             self.width - 40, 20,
@@ -136,6 +157,7 @@ class FlappyBird:
             
             if self.check_collision():
                 self.game_over = True
+                self.show_game_over_message()
             
             self.master.after(15, self.update)
 
@@ -168,4 +190,5 @@ class FlappyBird:
 if __name__ == "__main__":
     root = tk.Tk()
     game = FlappyBird(root)
+    game.show_start_message()
     root.mainloop()
